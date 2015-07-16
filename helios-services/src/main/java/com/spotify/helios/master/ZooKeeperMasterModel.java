@@ -73,6 +73,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -610,7 +611,8 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                 final DeploymentGroupStatus status) {
     final int taskIndex = status.getTaskIndex();
     final RolloutTask currentTask = Iterables.get(status.getRolloutTasks(), taskIndex, null);
-    final RollingUpdateTaskResult result = getRollingUpdateTaskResult(currentTask, deploymentGroup);
+    final RollingUpdateTaskResult result = getRollingUpdateTaskResult(currentTask, deploymentGroup,
+                                                                      status.getFailedTargets());
 
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
     final RolloutOpsEvents opsEvents = new RolloutOpsEvents();
@@ -620,16 +622,30 @@ public class ZooKeeperMasterModel implements MasterModel {
       return opsEvents;
     }
 
+    final DeploymentGroupStatus.Builder statusBuilder = status.toBuilder();
+
     if (result.error != null) {
-      // if an error occurred, record it in the status and fail
-      opsEvents.addEvent(DeploymentGroupEvent.newBuilder()
-                       .setDeploymentGroup(deploymentGroup)
-                       .setDeploymentGroupState(FAILED)
-                       .build());
-      opsEvents.addOperation(set(statusPath, status.toBuilder()
-          .setState(FAILED)
-          .setError(result.error.toString())
-          .build()));
+      if (currentTask != null) {
+        // if an error occurred, mark the target as failed
+        statusBuilder.addFailedTarget(currentTask.getTarget());
+      }
+
+      final ZooKeeperClient client = provider.get("getRolloutOperations");
+      // TODO (dxia) optimize getting hosts?
+      final int numTargets = getDeploymentGroupHosts(client, deploymentGroup).size();
+
+      if (((float) statusBuilder.getFailedTargets().size() / numTargets * 100)
+          > deploymentGroup.getRolloutOptions().getFailureThreshold()) {
+        // If the rollout is above the failure threshold, fail the entire rollout
+        opsEvents.addEvent(DeploymentGroupEvent.newBuilder()
+                               .setDeploymentGroup(deploymentGroup)
+                               .setDeploymentGroupState(FAILED)
+                               .build());
+        opsEvents.addOperation(set(statusPath, statusBuilder
+            .setState(FAILED)
+            .setError(result.error.toString())
+            .build()));
+      }
     } else {
       for (ZooKeeperOperation op : result.operations) {
         opsEvents.addOperation(op);
@@ -665,7 +681,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private RollingUpdateTaskResult getRollingUpdateTaskResult(final RolloutTask task,
-                                                             final DeploymentGroup group) {
+                                                             final DeploymentGroup group,
+                                                             final Set<String> failedTargets) {
     final RollingUpdateTaskResult result;
     if (task == null) {
       // if there is no rollout task, then we're done by definition. this can happen
@@ -674,6 +691,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     } else {
       final String host = task.getTarget();
       final RolloutTask.Action action = task.getAction();
+
+      if (failedTargets.contains(task.getTarget())) {
+        return RollingUpdateTaskResult.SKIP;
+      }
 
       switch (action) {
         case UNDEPLOY_OLD_JOBS:
@@ -907,13 +928,20 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public List<String> getDeploymentGroupHosts(final String name)
       throws DeploymentGroupDoesNotExistException {
-    log.debug("getting deployment group hosts: {}", name);
     final ZooKeeperClient client = provider.get("getDeploymentGroupHosts");
 
     final DeploymentGroup deploymentGroup = getDeploymentGroup(client, name);
     if (deploymentGroup == null) {
       throw new DeploymentGroupDoesNotExistException(name);
     }
+
+    return getDeploymentGroupHosts(client, deploymentGroup);
+  }
+
+  private List<String> getDeploymentGroupHosts(final ZooKeeperClient client,
+                                               final DeploymentGroup deploymentGroup) {
+    final String name = deploymentGroup.getName();
+    log.debug("getting deployment group hosts: {}", name);
 
     try {
       final byte[] data = client.getData(Paths.statusDeploymentGroupHosts(name));
@@ -940,7 +968,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("getJobId");
     return getJob(client, id);
   }
-
 
   private Job getJob(final ZooKeeperClient client, final JobId id) {
     final String path = Paths.configJob(id);
@@ -1650,6 +1677,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     private final Exception error;
 
     public static final RollingUpdateTaskResult TASK_IN_PROGRESS = of(null);
+
+    public static final RollingUpdateTaskResult SKIP = of(null);
 
     public static final RollingUpdateTaskResult TASK_COMPLETE = of(
         Collections.<ZooKeeperOperation>emptyList());

@@ -38,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
  * {
  *   "job": "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
  *   "goal": "START",
+ *   "deployerMaster" : "heliosmaster1.example.com",
+ *   "deployerUser" : null,
+ *   "deploymentGroupName" : "my-group"
  * }
  * </pre>
  */

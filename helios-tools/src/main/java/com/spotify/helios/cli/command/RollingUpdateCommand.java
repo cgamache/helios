@@ -60,6 +60,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument nameArg;
   private final Argument timeoutArg;
   private final Argument parallelismArg;
+  private final Argument failureThresholdArg;
   private final Argument asyncArg;
   private final Argument rolloutTimeoutArg;
   private final Argument migrateArg;
@@ -103,6 +104,11 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .type(Integer.class)
         .help("Number of hosts to deploy to concurrently");
 
+    failureThresholdArg = parser.addArgument("--failure-threshold")
+        .setDefault(RolloutOptions.DEFAULT_FAILURE_THRESHOLD)
+        .type(Integer.class)
+        .help("The percentage of failed deployments that will stop the rolling update.");
+
     asyncArg = parser.addArgument("--async")
         .action(storeTrue())
         .help("Don't block until rolling-update is complete");
@@ -129,12 +135,15 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final String name = options.getString(nameArg.getDest());
     final long timeout = options.getLong(timeoutArg.getDest());
     final int parallelism = options.getInt(parallelismArg.getDest());
+    final int failureThreshold = options.getInt(failureThresholdArg.getDest());
     final boolean async = options.getBoolean(asyncArg.getDest());
     final long rolloutTimeout = options.getLong(rolloutTimeoutArg.getDest());
     final boolean migrate = options.getBoolean(migrateArg.getDest());
 
     checkArgument(timeout > 0, "Timeout must be greater than 0");
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
+    checkArgument(failureThreshold > 0 && failureThreshold < 100,
+                  "Failure threshold must be between 0 and 100");
     checkArgument(rolloutTimeout > 0, "Rollout timeout must be greater than 0");
 
     final long startTime = timeSupplier.get();
@@ -142,6 +151,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
         .setTimeout(timeout)
         .setParallelism(parallelism)
+        .setFailureThreshold(failureThreshold)
         .setMigrate(migrate)
         .build();
     final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
@@ -156,15 +166,17 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     }
 
     if (!json) {
-      out.println(format("Rolling update%s started: %s -> %s (parallelism=%d, timeout=%d)%s",
+      out.println(format("Rolling update%s started: %s -> %s (parallelism=%d, timeout=%d, "
+                         + "failure threshold=%d)%s",
                          async ? " (async)" : "",
-                         name, jobId.toShortString(), parallelism, timeout,
+                         name, jobId.toShortString(), parallelism, timeout, failureThreshold,
                          async ? "" : "\n"));
     }
 
     final Map<String, Object> jsonOutput = Maps.newHashMap();
     jsonOutput.put("parallelism", parallelism);
     jsonOutput.put("timeout", timeout);
+    jsonOutput.put("failureThreshold", failureThreshold);
 
     if (async) {
       if (json) {

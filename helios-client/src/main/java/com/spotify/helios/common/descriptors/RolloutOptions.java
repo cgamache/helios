@@ -31,16 +31,20 @@ public class RolloutOptions {
 
   public static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
   public static final int DEFAULT_PARALLELISM = 1;
+  public static final int DEFAULT_FAILURE_THRESHOLD = 1;
 
   private final long timeout;
   private final int parallelism;
+  private final int failureThreshold;
   private final boolean migrate;
 
   public RolloutOptions(@JsonProperty("timeout") final long timeout,
                         @JsonProperty("parallelism") final int parallelism,
+                        @JsonProperty("failureThreshold") final int failureThreshold,
                         @JsonProperty("migrate") final boolean migrate) {
     this.timeout = timeout;
     this.parallelism = parallelism;
+    this.failureThreshold = failureThreshold;
     this.migrate = migrate;
   }
 
@@ -52,6 +56,7 @@ public class RolloutOptions {
     return new Builder()
         .setTimeout(timeout)
         .setParallelism(parallelism)
+        .setFailureThreshold(failureThreshold)
         .setMigrate(migrate);
   }
 
@@ -61,6 +66,10 @@ public class RolloutOptions {
 
   public int getParallelism() {
     return parallelism;
+  }
+
+  public int getFailureThreshold() {
+    return failureThreshold;
   }
 
   public boolean getMigrate() {
@@ -84,6 +93,9 @@ public class RolloutOptions {
     if (parallelism != that.parallelism) {
       return false;
     }
+    if (failureThreshold != that.failureThreshold) {
+      return false;
+    }
     if (timeout != that.timeout) {
       return false;
     }
@@ -95,6 +107,7 @@ public class RolloutOptions {
   public int hashCode() {
     int result = (int) (timeout ^ (timeout >>> 32));
     result = 31 * result + parallelism;
+    result = 31 * result + failureThreshold;
     result = 31 * result + (migrate ? 1 : 0);
     return result;
   }
@@ -104,6 +117,7 @@ public class RolloutOptions {
     return "RolloutOptions{" +
            "timeout=" + timeout +
            ", parallelism=" + parallelism +
+           ", failure threshold=" + failureThreshold +
            ", migrate=" + migrate +
            '}';
   }
@@ -112,11 +126,13 @@ public class RolloutOptions {
 
     private long timeout;
     private int parallelism;
+    private int failureThreshold;
     private boolean migrate;
 
     public Builder() {
       this.timeout = DEFAULT_TIMEOUT;
       this.parallelism = DEFAULT_PARALLELISM;
+      this.failureThreshold = DEFAULT_FAILURE_THRESHOLD;
       this.migrate = false;
     }
 
@@ -131,6 +147,11 @@ public class RolloutOptions {
       return this;
     }
 
+    public Builder setFailureThreshold(final int failureThreshold) {
+      this.failureThreshold = failureThreshold;
+      return this;
+    }
+
     public Builder setMigrate(final boolean migrate) {
       this.migrate = migrate;
       return this;
@@ -138,7 +159,7 @@ public class RolloutOptions {
 
 
     public RolloutOptions build() {
-      return new RolloutOptions(timeout, parallelism, migrate);
+      return new RolloutOptions(timeout, parallelism, failureThreshold, migrate);
     }
   }
 }

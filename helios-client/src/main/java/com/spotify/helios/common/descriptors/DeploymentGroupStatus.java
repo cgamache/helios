@@ -22,12 +22,14 @@
 package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -36,6 +38,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 @JsonIgnoreProperties(value = {"version"}, ignoreUnknown = true)
 public class DeploymentGroupStatus extends Descriptor {
+
+  private static final Set<String> EMPTY_FAILED_TARGETS = Collections.emptySet();
 
   public enum State {
     PLANNING_ROLLOUT,
@@ -49,6 +53,7 @@ public class DeploymentGroupStatus extends Descriptor {
   private final List<RolloutTask> rolloutTasks;
   private final int taskIndex;
   private final int successfulIterations;
+  private final Set<String> failedTargets;
   private final int version;
   private final String error;
 
@@ -58,6 +63,7 @@ public class DeploymentGroupStatus extends Descriptor {
       @JsonProperty("rolloutTasks") final List<RolloutTask> rolloutTasks,
       @JsonProperty("taskIndex") final int taskIndex,
       @JsonProperty("successfulIterations") int successfulIterations,
+      @JsonProperty("failedTargets") Set<String> failedTargets,
       @JsonProperty("error") final String error,
       @JsonProperty("version") final int version) {
     this.deploymentGroup = checkNotNull(deploymentGroup, "deploymentGroup");
@@ -65,6 +71,7 @@ public class DeploymentGroupStatus extends Descriptor {
     this.rolloutTasks = checkNotNull(rolloutTasks, "rolloutTasks");
     this.taskIndex = taskIndex;
     this.successfulIterations = successfulIterations;
+    this.failedTargets = failedTargets;
     this.error = error;
     this.version = version;
   }
@@ -76,6 +83,7 @@ public class DeploymentGroupStatus extends Descriptor {
         .setRolloutTasks(rolloutTasks)
         .setTaskIndex(taskIndex)
         .setSuccessfulIterations(successfulIterations)
+        .setFailedTargets(failedTargets)
         .setError(error)
         .setVersion(version);
   }
@@ -86,6 +94,7 @@ public class DeploymentGroupStatus extends Descriptor {
     this.rolloutTasks = checkNotNull(builder.rolloutTasks, "rolloutTasks");
     this.taskIndex = builder.taskIndex;
     this.successfulIterations = builder.successfulIterations;
+    this.failedTargets = Optional.fromNullable(builder.failedTargets).or(EMPTY_FAILED_TARGETS);
     this.error = builder.error;
     this.version = builder.version;
   }
@@ -108,6 +117,10 @@ public class DeploymentGroupStatus extends Descriptor {
 
   public int getSuccessfulIterations() {
     return successfulIterations;
+  }
+
+  public Set<String> getFailedTargets() {
+    return failedTargets;
   }
 
   public String getError() {
@@ -134,6 +147,9 @@ public class DeploymentGroupStatus extends Descriptor {
     final DeploymentGroupStatus that = (DeploymentGroupStatus) o;
 
     if (successfulIterations != that.successfulIterations) {
+      return false;
+    }
+    if (failedTargets != that.failedTargets) {
       return false;
     }
     if (taskIndex != that.taskIndex) {
@@ -167,6 +183,7 @@ public class DeploymentGroupStatus extends Descriptor {
     result = 31 * result + (rolloutTasks != null ? rolloutTasks.hashCode() : 0);
     result = 31 * result + taskIndex;
     result = 31 * result + successfulIterations;
+    result = 31 * result + (failedTargets != null ? failedTargets.hashCode() : 0);
     result = 31 * result + version;
     result = 31 * result + (error != null ? error.hashCode() : 0);
     return result;
@@ -182,6 +199,7 @@ public class DeploymentGroupStatus extends Descriptor {
         .add("error", error)
         .add("version", version)
         .add("successfulIterations", successfulIterations)
+        .add("failedTargets", failedTargets)
         .toString();
   }
 
@@ -191,6 +209,7 @@ public class DeploymentGroupStatus extends Descriptor {
     private List<RolloutTask> rolloutTasks = Collections.emptyList();
     private int taskIndex;
     private int successfulIterations;
+    private Set<String> failedTargets;
     private String error;
     private int version;
 
@@ -217,6 +236,20 @@ public class DeploymentGroupStatus extends Descriptor {
     public Builder setSuccessfulIterations(int successfulIterations) {
       this.successfulIterations = successfulIterations;
       return this;
+    }
+
+    public Builder setFailedTargets(Set<String> failedTargets) {
+      this.failedTargets = failedTargets;
+      return this;
+    }
+
+    public Builder addFailedTarget(String failedTarget) {
+      this.failedTargets.add(failedTarget);
+      return this;
+    }
+
+    public Set<String> getFailedTargets() {
+      return this.failedTargets;
     }
 
     public Builder setError(String error) {

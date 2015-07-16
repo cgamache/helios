@@ -67,6 +67,7 @@ public class RollingUpdateCommandTest {
   private static final JobId OLD_JOB_ID = new JobId("foo", "1", "3232323232323232323");
   private static final JobId NEW_JOB_ID = new JobId("foo", "3", "4242424242424242424");
   private static final int PARALLELISM = 1;
+  private static final int FAILURE_THRESHOLD = 1;
   private static final long TIMEOUT = 300;
 
   private final Namespace options = mock(Namespace.class);
@@ -83,6 +84,7 @@ public class RollingUpdateCommandTest {
     // Default CLI argument stubs
     when(options.getString("deployment-group-name")).thenReturn(GROUP_NAME);
     when(options.getInt("parallelism")).thenReturn(PARALLELISM);
+    when(options.getInt("failure_threshold")).thenReturn(FAILURE_THRESHOLD);
     when(options.getLong("timeout")).thenReturn(TIMEOUT);
     when(options.getLong("rollout_timeout")).thenReturn(10L);
     when(options.getBoolean("async")).thenReturn(false);
@@ -144,11 +146,11 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(0, ret);
 
     final String expected = (
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, failure threshold=1)\n" +
         "\n" +
         "host1 -> RUNNING (1/3)\n" +
         "host2 -> RUNNING (2/3)\n" +
@@ -172,11 +174,11 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(0, ret);
 
     final String expected =
-        "Rolling update (async) started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n";
+        "Rolling update (async) started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, failure threshold=1)\n";
 
     assertEquals(expected, output);
   }
@@ -206,11 +208,11 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(1, ret);
 
     final String expected =
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, failure threshold=1)\n" +
         "\n" +
         "host1 -> RUNNING (1/3)\n" +
         "\n" +
@@ -239,11 +241,11 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(1, ret);
 
     final String expected =
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, failure threshold=1)\n" +
         "\n" +
         "\n" +
         "Timed out! (rolling-update still in progress)\n" +
@@ -271,11 +273,11 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(1, ret);
 
     final String expected =
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, failure threshold=1)\n" +
         "\n" +
         "host1 -> RUNNING (1/2)\n" +
         "\n" +
@@ -304,13 +306,14 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
         "status", "DONE",
         "duration", 0.00,
         "parallelism", PARALLELISM,
+        "failureThreshold", FAILURE_THRESHOLD,
         "timeout", TIMEOUT));
   }
 
@@ -326,12 +329,13 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
         "status", "OK",
         "parallelism", PARALLELISM,
+        "failureThreshold", FAILURE_THRESHOLD,
         "timeout", TIMEOUT));
   }
 
@@ -356,15 +360,16 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(1, ret);
 
-    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
-        "status", "FAILED",
-        "error", "Deployment-group job id changed during rolling-update",
-        "duration", 1.00,
-        "parallelism", PARALLELISM,
-        "timeout", TIMEOUT));
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
+        .put("status", "FAILED")
+        .put("error", "Deployment-group job id changed during rolling-update")
+        .put("duration", 1.00)
+        .put("parallelism", PARALLELISM)
+        .put("failureThreshold", FAILURE_THRESHOLD)
+        .put("timeout", TIMEOUT).build());
   }
 
   @Test
@@ -386,13 +391,14 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
         "status", "TIMEOUT",
         "duration", 601.00,
         "parallelism", PARALLELISM,
+        "failureThreshold", FAILURE_THRESHOLD,
         "timeout", TIMEOUT));
   }
 
@@ -415,15 +421,16 @@ public class RollingUpdateCommandTest {
     System.out.println(output);
 
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, false));
     assertEquals(1, ret);
 
-    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
-        "status", "FAILED",
-        "error", "foobar",
-        "duration", 1.00,
-        "parallelism", PARALLELISM,
-        "timeout", TIMEOUT));
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
+    .put("status", "FAILED")
+        .put("error", "foobar")
+        .put("duration", 1.00)
+        .put("parallelism", PARALLELISM)
+        .put("failureThreshold", FAILURE_THRESHOLD)
+        .put("timeout", TIMEOUT).build());
   }
 
   @Test
@@ -443,13 +450,14 @@ public class RollingUpdateCommandTest {
 
     // Verify that rollingUpdate() was called with migrate=true
     verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, true));
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, FAILURE_THRESHOLD, true));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
         "status", "DONE",
         "duration", 0.00,
         "parallelism", PARALLELISM,
+        "failureThreshold", FAILURE_THRESHOLD,
         "timeout", TIMEOUT));
   }
 

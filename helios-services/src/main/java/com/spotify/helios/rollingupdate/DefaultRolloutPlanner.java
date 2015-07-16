@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
 import java.util.List;
@@ -58,7 +59,8 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
     // generate the rollout tasks
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
     final int parallelism = deploymentGroup.getRolloutOptions() != null ?
-                            deploymentGroup.getRolloutOptions().getParallelism() : 1;
+                            deploymentGroup.getRolloutOptions().getParallelism() :
+                            RolloutOptions.DEFAULT_PARALLELISM;
 
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
       for (final String host : partition) {
