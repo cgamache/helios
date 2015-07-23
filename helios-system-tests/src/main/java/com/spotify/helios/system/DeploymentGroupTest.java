@@ -363,4 +363,98 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
+
+//  @Test
+//  public void testRollingUpdate() throws Exception {
+//    final List<String> hosts = ImmutableList.of(
+//        "dc1-" + testHost() + "-a1.dc1.example.com",
+//        "dc1-" + testHost() + "-a2.dc1.example.com",
+//        "dc2-" + testHost() + "-a1.dc2.example.com",
+//        "dc2-" + testHost() + "-a3.dc2.example.com",
+//        "dc3-" + testHost() + "-a4.dc3.example.com"
+//    );
+//
+//    // start agents
+//    for (final String host : hosts) {
+//      startDefaultAgent(host, "--labels", TEST_LABEL);
+//    }
+//
+//    // create a deployment group and job
+//    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+////    final int externalPort1 = temporaryPorts.localPort("external-1");
+////    final int externalPort2 = temporaryPorts.localPort("external-2");
+////    final Map<String, PortMapping> ports1 = ImmutableMap.of("foo", PortMapping.of(4711, externalPort1));
+////    final Map<String, PortMapping> ports2 = ImmutableMap.of("foo", PortMapping.of(4711, externalPort2));
+//    final JobId jobId1 = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+////    final JobId jobId2 = createJob(testJobName + 2, testJobVersion, BUSYBOX, IDLE_COMMAND);
+////    final JobId jobId3 = createJob(testJobName + 3, testJobVersion, BUSYBOX, IDLE_COMMAND, EMPTY_ENV, ports2);
+//
+//    // Wait for agents to come up
+//    final HeliosClient client = defaultClient();
+//    for (final String host : hosts) {
+//      awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+//    }
+//
+//    assertNotNull(jobId1);
+////    assertNotNull(jobId2);
+////    assertNotNull(jobId3);
+//    deployJob(jobId1, hosts.get(0));
+//    deployJob(jobId1, hosts.get(1));
+//    awaitJobState(client, hosts.get(0), jobId1, TaskStatus.State.RUNNING, LONG_WAIT_SECONDS, SECONDS);
+//    awaitJobState(client, hosts.get(1), jobId1, TaskStatus.State.RUNNING, LONG_WAIT_SECONDS, SECONDS);
+////    awaitTaskState(jobId, hosts.get(1), TaskStatus.State.RUNNING);
+//
+//    // trigger a rolling update
+//    System.out.println(cli("rolling-update", testJobNameAndVersion, TEST_GROUP));
+//
+//    // ensure the job is running on all agents and the deployment group reaches DONE
+////    for (final String host : hosts) {
+////      awaitTaskState(jobId3, host, TaskStatus.State.RUNNING);
+////    }
+////
+////    final Deployment deployment =
+////        defaultClient().hostStatus(hosts.get(0)).get().getJobs().get(jobId);
+////    assertEquals(TEST_GROUP, deployment.getDeploymentGroupName());
+////    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+//
+////    // create a second job
+////    final String secondJobVersion = testJobVersion + "2";
+////    final String secondJobNameAndVersion = testJobNameAndVersion + "2";
+////    final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
+////
+////    // trigger a rolling update to replace the first job with the second job
+////    final String output = cli("rolling-update", secondJobNameAndVersion, TEST_GROUP);
+////
+////    // Check that the hosts in the output are ordered
+////    final List<String> lines = Lists.newArrayList(Splitter.on("\n").split(output));
+////    for (int i = 0; i < hosts.size(); i++) {
+////      assertThat(lines.get(i + 2), containsString(hosts.get(i)));
+////    }
+////
+////    // ensure the second job rolled out fine
+////    for (final String host : hosts) {
+////      awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+////    }
+//
+////    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+////    // create a deployment group and job
+////    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+////    final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711, 4711));
+////    final JobId jobId2 = createJob(testJobName + 2, testJobVersion, BUSYBOX, IDLE_COMMAND, EMPTY_ENV, ports);
+////    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND, EMPTY_ENV, ports);
+////
+////    // Wait for agents to come up
+////    final HeliosClient client = defaultClient();
+////    for (final String host : hosts) {
+////      awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+////    }
+////
+////    assertNotNull(jobId2);
+////    deployJob(jobId2, hosts.get(0));
+////    awaitJobState(client, hosts.get(0), jobId2, TaskStatus.State.RUNNING, LONG_WAIT_SECONDS, SECONDS);
+//////    awaitTaskState(jobId, hosts.get(1), TaskStatus.State.RUNNING);
+////
+////    // trigger a rolling update
+////    System.out.println(cli("rolling-update", testJobNameAndVersion, TEST_GROUP, "--failure-threshold", "50"));
+//  }
 }
