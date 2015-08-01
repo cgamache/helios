@@ -23,15 +23,15 @@ package com.spotify.helios.servicescommon;
 
 import com.google.common.collect.ImmutableList;
 
+import java.net.URI;
+import java.util.Collections;
+
 import io.dropwizard.jetty.ConnectorFactory;
 import io.dropwizard.jetty.HttpConnectorFactory;
 import io.dropwizard.server.DefaultServerFactory;
 
-import java.net.InetSocketAddress;
-import java.util.Collections;
-
 public class ServiceUtil {
-  public static DefaultServerFactory createServerFactory(final InetSocketAddress httpEndpoint,
+  public static DefaultServerFactory createServerFactory(final URI endpoint,
                                                          final int adminPort,
                                                          final boolean noHttp) {
     // TODO(drewc) be more flexible on the httpEndpoint -- make it a URI -- so if/when we support
@@ -43,8 +43,8 @@ public class ServiceUtil {
       serverFactory.setAdminConnectors(Collections.<ConnectorFactory>emptyList());
     } else {
       final HttpConnectorFactory serviceConnector = new HttpConnectorFactory();
-      serviceConnector.setPort(httpEndpoint.getPort());
-      serviceConnector.setBindHost(httpEndpoint.getHostString());
+      serviceConnector.setPort(endpoint.getPort());
+      serviceConnector.setBindHost(endpoint.getHost());
       serverFactory.setApplicationConnectors(ImmutableList.<ConnectorFactory>of(serviceConnector));
 
       final HttpConnectorFactory adminConnector = new HttpConnectorFactory();

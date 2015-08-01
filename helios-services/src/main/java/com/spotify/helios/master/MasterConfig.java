@@ -21,7 +21,7 @@
 
 package com.spotify.helios.master;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -49,7 +49,7 @@ public class MasterConfig extends Configuration {
   private String zooKeeperClusterId;
   private boolean noZooKeeperMasterRegistration;
   private int adminPort;
-  private InetSocketAddress httpEndpoint;
+  private URI uriEndpoint;
   private List<String> kafkaBrokers;
   private Path stateDirectory;
 
@@ -184,8 +184,8 @@ public class MasterConfig extends Configuration {
     return this;
   }
 
-  public MasterConfig setHttpEndpoint(InetSocketAddress httpEndpoint) {
-    this.httpEndpoint = httpEndpoint;
+  public MasterConfig setUriEndpoint(URI uriEndpoint) {
+    this.uriEndpoint = uriEndpoint;
     return this;
   }
 
@@ -211,7 +211,7 @@ public class MasterConfig extends Configuration {
     return adminPort;
   }
 
-  public InetSocketAddress getHttpEndpoint() {
-    return httpEndpoint;
+  public URI getUriEndpoint() {
+    return uriEndpoint;
   }
 }
